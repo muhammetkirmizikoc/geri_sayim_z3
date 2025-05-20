@@ -3,8 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
-import 'screen/add.dart'; // SayacEklemeSayfasi için
-import 'screen/settings.dart'; // AyarlarSayfasi için
+import 'add.dart'; // SayacEklemeSayfasi için
+import 'settings.dart'; // AyarlarSayfasi için
 
 class Sayac {
   final String id;
