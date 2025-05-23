@@ -145,6 +145,7 @@ class AnaSayfa extends StatefulWidget {
 
 class _AnaSayfaState extends State<AnaSayfa> {
   List<Sayac> sayaclar = [];
+  String? seciliKategori; // Seçili kategori, null ise "Tümü"
 
   @override
   void initState() {
@@ -201,11 +202,10 @@ class _AnaSayfaState extends State<AnaSayfa> {
     });
   }
 
-  // Yeni fonksiyon: Tüm sayaçları temizle
   void _tumSayaclariTemizle() {
     setState(() {
       sayaclar.clear();
-      _verileriKaydet(); // Sayaçlar listesi temizlendikten sonra SharedPreferences'ı güncelle
+      _verileriKaydet();
     });
   }
 
@@ -258,6 +258,20 @@ class _AnaSayfaState extends State<AnaSayfa> {
     );
   }
 
+  // Kategorileri dinamik olarak al
+  List<String> _kategorileriGetir() {
+    final kategoriler = sayaclar.map((sayac) => sayac.kategori).toSet().toList();
+    return ['Tümü', ...kategoriler];
+  }
+
+  // Filtrelenmiş sayaç listesi
+  List<Sayac> get _filtrelenmisSayaclar {
+    if (seciliKategori == null || seciliKategori == 'Tümü') {
+      return sayaclar;
+    }
+    return sayaclar.where((sayac) => sayac.kategori == seciliKategori).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -271,7 +285,6 @@ class _AnaSayfaState extends State<AnaSayfa> {
                 context,
                 MaterialPageRoute(builder: (context) => AyarlarSayfasi()),
               ).then((result) {
-                // Ayarlar sayfasından dönüldüğünde, temizleme işlemi yapıldıysa sayaçları güncelle
                 if (result == 'temizle') {
                   _tumSayaclariTemizle();
                 }
@@ -280,7 +293,48 @@ class _AnaSayfaState extends State<AnaSayfa> {
           ),
         ],
       ),
-      body: sayaclar.isEmpty ? _bosEkranWidgeti() : _listeGorunumu(),
+      body: Column(
+        children: [
+          // Filtreleme Alanı
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _kategorileriGetir().map((kategori) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: FilterChip(
+                      label: Text(kategori),
+                      selected: seciliKategori == kategori || (kategori == 'Tümü' && seciliKategori == null),
+                      selectedColor: Colors.blue,
+                      checkmarkColor: Colors.white,
+                      labelStyle: TextStyle(
+                        color: (seciliKategori == kategori || (kategori == 'Tümü' && seciliKategori == null))
+                            ? Colors.white
+                            : Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : Colors.black,
+                      ),
+                      onSelected: (bool secildi) {
+                        setState(() {
+                          seciliKategori = secildi ? kategori : null;
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          // Liste Görünümü
+          Expanded(
+            child: sayaclar.isEmpty
+                ? _bosEkranWidgeti()
+                : _listeGorunumu(),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue,
         child: Icon(Icons.add, color: Colors.white),
@@ -319,15 +373,12 @@ class _AnaSayfaState extends State<AnaSayfa> {
     );
   }
 
-
-
-
   Widget _listeGorunumu() {
     return ListView.builder(
       padding: EdgeInsets.all(8),
-      itemCount: sayaclar.length,
+      itemCount: _filtrelenmisSayaclar.length,
       itemBuilder: (context, index) {
-        final sayac = sayaclar[index];
+        final sayac = _filtrelenmisSayaclar[index];
         final kalanSure = sayac.tarihSaat.difference(DateTime.now());
         final dateFormat = DateFormat('dd/MM/yyyy');
 
